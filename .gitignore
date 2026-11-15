@@ -1,0 +1,23 @@
+# Run-time output is generated on the learner's computer.
+runtime/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+.env
+.venv/
+venv/
+
+# Runtime records and generated reports
+runtime/
+
+# Python temporary files
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# Environment variables and secrets
+.env

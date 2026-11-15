@@ -1,0 +1,9 @@
+SecureBank fictional training file: account-summary. No real customer or employee data.
+Demo: normal single-file update at 2026-11-15T13:08:19+00:00
+Demo: normal single-file update at 2026-11-15T13:09:17+00:00
+Demo: synthetic rapid-change event at 2026-11-15T13:11:15+00:00 (b0b36f)
+Demo: normal single-file update at 2026-11-15T13:26:16+00:00
+Demo: synthetic rapid-change event at 2026-11-15T13:28:55+00:00 (0ce3a9)
+Demo: normal single-file update at 2026-11-15T16:51:31+00:00
+Demo: normal single-file update at 2026-11-15T17:07:44+00:00
+Demo: synthetic rapid-change event at 2026-11-15T17:18:19+00:00 (ef08f5)

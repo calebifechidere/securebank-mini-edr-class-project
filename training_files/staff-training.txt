@@ -1,0 +1,4 @@
+SecureBank fictional training file: staff-training. No real customer or employee data.
+Demo: synthetic rapid-change event at 2026-11-15T13:11:15+00:00 (b14d44)
+Demo: synthetic rapid-change event at 2026-11-15T13:28:55+00:00 (09a599)
+Demo: synthetic rapid-change event at 2026-11-15T17:18:19+00:00 (b94d87)

@@ -1,0 +1,4 @@
+SecureBank fictional training file: branch-notes. No real customer or employee data.
+Demo: synthetic rapid-change event at 2026-11-15T13:11:15+00:00 (e03cff)
+Demo: synthetic rapid-change event at 2026-11-15T13:28:55+00:00 (6fe29f)
+Demo: synthetic rapid-change event at 2026-11-15T17:18:19+00:00 (93eac3)
