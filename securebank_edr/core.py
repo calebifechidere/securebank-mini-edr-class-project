@@ -1,5 +1,5 @@
 """Core monitoring, alerting, safe-response simulation and reporting.
-
+_-----------55
 Security boundary: the monitor observes only .txt files inside the explicitly
 selected training folder. It never collects file contents in logs and never
 kills processes, isolates an endpoint or disables network connectivity.
@@ -53,9 +53,12 @@ class MiniEDR:
         cooldown_seconds: float = 12.0,
         poll_interval: float = 0.5,
         monotonic: Callable[[], float] = time.monotonic,
+        medium_threshold: int = 3,
     ) -> None:
         if threshold < 2 or window_seconds <= 0 or cooldown_seconds < 0 or poll_interval <= 0:
             raise ValueError("Invalid detector settings")
+        if not 2 <= medium_threshold <= threshold:
+            raise ValueError("medium_threshold must be between 2 and threshold")
         self.workspace = Path(workspace).resolve()
         self.training = self.workspace / "training_files"
         self.runtime = self.workspace / "runtime"
@@ -64,6 +67,7 @@ class MiniEDR:
         self.audit_file = self.runtime / "audit.jsonl"
         self.reports_dir = self.runtime / "reports"
         self.threshold = threshold
+        self.medium_threshold = medium_threshold
         self.window_seconds = window_seconds
         self.cooldown_seconds = cooldown_seconds
         self.poll_interval = poll_interval
@@ -74,6 +78,7 @@ class MiniEDR:
         self._snapshot: dict[str, tuple[int, int, str]] = {}
         self._recent: deque[tuple[float, dict]] = deque()
         self._last_alert_time = float("-inf")
+        self._last_alert: Optional[dict] = None
         self.events: list[dict] = []
         self.alerts: list[dict] = []
         self._initialized = False
@@ -178,6 +183,12 @@ class MiniEDR:
         self._append_line(self.events_file, ev)
         if action in ("CREATED", "MODIFIED"):
             self._check_detection(ev)
+    def _reason(self, count: int, severity: str) -> str:
+        return (f"{count} distinct training .txt files changed within "
+                f"{self.window_seconds:g} seconds ({severity}; "
+                f"MEDIUM threshold: {self.medium_threshold}, "
+                f"HIGH threshold: {self.threshold}).")
+
 
     def _check_detection(self, ev: dict) -> None:
         now = self._clock()
@@ -185,27 +196,43 @@ class MiniEDR:
         while self._recent and now - self._recent[0][0] > self.window_seconds:
             self._recent.popleft()
         distinct_files = {e["file"] for _, e in self._recent}
-        if len(distinct_files) < self.threshold:
+        count = len(distinct_files)
+        if count < self.medium_threshold:
             return
-        if now - self._last_alert_time < self.cooldown_seconds:
-            return
+        severity = "HIGH" if count >= self.threshold else "MEDIUM"
         evidence = list(self._recent)
+
+        if now - self._last_alert_time < self.cooldown_seconds:
+            # Same burst: upgrade the open MEDIUM alert if it has grown to HIGH.
+            last = self._last_alert
+            if last is not None and last["severity"] == "MEDIUM" and severity == "HIGH":
+                last["severity"] = "HIGH"
+                last["escalated_from"] = "MEDIUM"
+                last["rule_reason"] = self._reason(count, severity)
+                last["affected_files"] = sorted(distinct_files)
+                last["supporting_event_ids"] = [e["event_id"] for _, e in evidence]
+                write_json_atomic(self.alerts_file, self.alerts)
+                self._recent.clear()
+            return
+
         alert = {
             "incident_id": make_id("INC"),
             "timestamp_utc": utc_now(),
             "title": "Unusual burst of training-file changes",
-            "severity": "HIGH",
+            "severity": severity,
             "status": "NEW",
             "rule": "DISTINCT_FILE_CHANGE_BURST",
-            "rule_reason": f"{len(distinct_files)} distinct training .txt files changed within {self.window_seconds:g} seconds (threshold: {self.threshold}).",
+            "rule_reason": self._reason(count, severity),
             "affected_files": sorted(distinct_files),
             "supporting_event_ids": [e["event_id"] for _, e in evidence],
             "actions": [],
         }
         self.alerts.append(alert)
         write_json_atomic(self.alerts_file, self.alerts)
+        self._last_alert = alert
         self._last_alert_time = now
-        self._recent.clear()
+        if severity == "HIGH":
+            self._recent.clear()   # MEDIUM keeps its events so the burst can escalate
 
     def scan_once(self) -> list[dict]:
         """Perform a single polling scan; return newly generated events."""
