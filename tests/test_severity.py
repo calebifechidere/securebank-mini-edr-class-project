@@ -73,3 +73,15 @@ class SeverityTierTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+def test_rapid_consecutive_bursts_respect_cooldown(self):
+        """Verify that a second immediate burst during cooldown behaves correctly without breaking state."""
+        # Trigger first high-severity burst (5 files)
+        self._change(0, 5, "burst-1")
+        self.assertEqual(self.edr.summary()["alerts_total"], 1)
+        
+        # Attempt an immediate second burst while inside the cooldown window
+        self._change(0, 5, "burst-2-during-cooldown")
+        
+        # The alert count should remain stable due to cooldown protection, 
+        # preventing duplicate alert spam for the same incident stream.
+        self.assertEqual(self.edr.summary()["alerts_total"], 1)
