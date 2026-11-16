@@ -48,9 +48,10 @@ It is a classroom prototype, not a complete endpoint protection product.
 
 The rule is deliberately simple and explainable:
 
-> Raise one HIGH alert when **five or more different `.txt` files** are created or modified within a **rolling 10-second window**.
+> Raise a **MEDIUM** alert when **3 or 4 different `.txt` files** are created or modified within a **rolling 10-second window**, and a **HIGH** alert at **5 or more**.
 
 The word **different** matters. Changing the same file five times does not count as five different files. The detector counts distinct file paths.
+If a MEDIUM burst grows to five files during the cooldown, the same incident is upgraded to HIGH instead of creating a second alert.
 
 A 12-second cooldown prevents repeated alerts from one burst. If a second suspicious simulation does not create a new alert immediately, wait at least 12 seconds and try again.
 
@@ -192,11 +193,11 @@ The baseline records the starting state of the sample files. Without it, the pro
 
 **5. Why does one changed file not trigger an alert?**
 
-The rule requires five different files to be created or modified within ten seconds. One file is below that threshold.
+The rule requires three different files (MEDIUM) or five (HIGH) to be created or modified within ten seconds. One file is below that threshold.
 
 **6. Why did you choose five files in ten seconds?**
 
-It is a simple demonstration threshold supplied by the project design. It makes the normal and suspicious scenarios easy to reproduce and explain. It is not a universal security rule.
+It is a simple demonstration threshold supplied by the project design. It makes the normal and suspicious scenarios easy to reproduce and explain. It is not a universal security rule.The MEDIUM threshold of 3 is also a demonstration value.
 
 **7. What is a false positive?**
 

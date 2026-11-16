@@ -15,13 +15,13 @@ Dedicated, fictional training_files/ (.txt only)
                   |
                   v
     Rolling-window detection rule
-     >= 5 distinct files in 10 s
+      >= 3 files: MEDIUM, >= 5: HIGH
                   |
        +----------+----------+
        |                     |
     No match              Rule match
        |                     |
-    Keep event             HIGH alert
+    Keep event             MEDIUM / HIGH alert
                              |
                      runtime/alerts.json
                              |
@@ -54,7 +54,7 @@ Dedicated, fictional training_files/ (.txt only)
 
 ## Incident fields
 
-`incident_id`, `timestamp_utc`, `title`, `severity`, `status`, `rule`, `rule_reason`, `affected_files`, `supporting_event_ids`, `actions`
+`incident_id`, `timestamp_utc`, `title`, `severity`, `status`, `rule`, `rule_reason`, `affected_files`, `supporting_event_ids`, `actions`, `escalated_from` (only present when a MEDIUM incident was upgraded to HIGH)
 
 ## Threat model and trust boundaries
 
@@ -62,4 +62,4 @@ The app runs locally on the learner's workstation and does not require root priv
 
 ## Detection tradeoffs
 
-The rule is transparent and suitable for beginner explanation. It detects visible bursts of different file changes, but cannot determine malicious intent. A legitimate script updating five sample files may be a false positive. A suspicious actor changing only a single file may not trigger the rule. The rolling window and cooldown are configurable for testing.
+The rule is transparent and suitable for beginner explanation. It detects visible bursts of different file changes, but cannot determine malicious intent. A legitimate script updating three or more sample files may be a false positive. A suspicious actor changing only a single file may not trigger the rule. The window, cooldown, HIGH threshold (`threshold`) and MEDIUM threshold (`medium_threshold`) are constructor parameters of `MiniEDR` in `core.py`, so tests can change them.

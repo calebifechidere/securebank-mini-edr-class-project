@@ -9,7 +9,7 @@
 | EDR principle | Prototype feature |
 |---|---|
 | **Visibility** | Polls a dedicated fictional training folder for created, modified, and deleted `.txt` files. |
-| **Detection** | Raises a HIGH alert when **5 different training files are created/modified within 10 seconds**. |
+| **Detection** | Raises a MEDIUM alert when **3-4 different training files** change within 10 seconds, and a HIGH alert at **5 or more**. |
 | **Investigation** | Shows the affected filenames, event IDs, rule, reason, severity, and an event timeline. |
 | **Response** | Analyst can acknowledge an incident and mark containment as **simulated**. |
 | **Reporting** | Saves structured JSON events/alerts and an incident-summary text report. |
@@ -102,8 +102,9 @@ SecureBank-Mini-EDR/
 - A file's **mtime, size, and SHA-256** fingerprint are compared against the previous polling snapshot.
 - Each new or modified `.txt` file generates an event with timestamp, type, relative path, size, and SHA-256. File contents are **never stored in the event log**.
 - The detector keeps changes from the previous **10 seconds**, using a monotonic clock.
-- If **5 distinct filenames** were changed in that window, it creates one HIGH-severity incident with the supporting event IDs.
-- A **12-second cooldown** suppresses immediate duplicate alerts.
+- If **3 or 4 distinct filenames** were changed in that window, it creates one **MEDIUM**-severity incident; at **5 or more** it is **HIGH**.
+- If a MEDIUM burst grows to 5 files during the cooldown, the **same incident is upgraded to HIGH** (`escalated_from: MEDIUM`) instead of creating a second alert.
+- A **12-second cooldown** suppresses immediate duplicate alerts. Only a MEDIUM-to-HIGH escalation is allowed during the cooldown.WW
 - Deletion is recorded as telemetry but is not an alert trigger in this beginner prototype.
 - Initial sample files are included in the startup baseline, so app launch alone raises no alert.
 
@@ -115,8 +116,10 @@ for each observed file event:
     if event is CREATED or MODIFIED:
         add event to rolling 10-second window
         remove expired events
-        if changed_distinct_files >= 5 and cooldown_elapsed:
-            generate HIGH alert with evidence
+    if changed_distinct_files >= 3 and cooldown_elapsed:
+        generate MEDIUM (3-4 files) or HIGH (5+ files) alert with evidence
+        elif cooldown active and open alert is MEDIUM and files >= 5:
+            upgrade that incident to HIGH
 ```
 
 ## 6. Safe response model
@@ -146,6 +149,7 @@ See `docs/PRESENTATION_GUIDE.md` for a beginner-friendly explanation and step-by
 - **Folder-only:** Does not monitor the whole computer, running processes, network connections or registry.
 - **Polling:** Very fast changes between polls may be missed. It is not an OS audit or kernel telemetry sensor.
 - **Threshold-based:** Legitimate batch edits can trigger a false positive; smaller suspicious changes may be missed.
+- **Distinct-file rule:** the rule counts *different* files, so editing one file repeatedly never raises an alert (documented by a test).
 - **Not tamper-resistant:** Training files, log files and Python code can be modified by someone with local filesystem access.
 - **No real containment:** Analyst response is simulated by a status update.
 - **No central console or threat intelligence:** This is a classroom proof of concept, not an enterprise endpoint product.
