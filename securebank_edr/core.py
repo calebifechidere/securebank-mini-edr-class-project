@@ -313,6 +313,43 @@ class MiniEDR:
         with self._lock:
             return next((a for a in self.alerts if a["incident_id"] == incident_id), None)
 
+
+    def get_incident_evidence(self, incident_id: str) -> list[dict]:
+        """Retrieve all supporting events for an incident in chronological order."""
+        with self._lock:
+            incident = self.get_incident(incident_id)
+
+            if incident is None:
+                raise KeyError("Incident not found")
+
+            supporting_ids = incident["supporting_event_ids"]
+
+            event_lookup = {
+                event["event_id"]: event
+                for event in self.events
+            }
+
+            missing_ids = [
+                event_id
+                for event_id in supporting_ids
+                if event_id not in event_lookup
+            ]
+
+            if missing_ids:
+                raise ValueError(
+                    f"Supporting evidence records missing: {missing_ids}"
+                )
+
+            evidence = [
+                event_lookup[event_id].copy()
+                for event_id in supporting_ids
+            ]
+
+            evidence.sort(key=lambda event: event["timestamp_utc"])
+
+            return evidence
+
+
     def respond(self, incident_id: str, response: str, analyst: str = "training-analyst") -> dict:
         """Change recorded incident state; never perform actual containment."""
         if response not in ("ACKNOWLEDGED", "CONTAINMENT_SIMULATED"):

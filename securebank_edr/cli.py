@@ -26,22 +26,47 @@ def display_alerts(edr: MiniEDR) -> None:
         print(f"{item['incident_id']} | {item['severity']} | {item['status']} | {item['rule_reason']}")
 
 
+
 def detail(edr: MiniEDR, incident_id: str) -> None:
     item = edr.get_incident(incident_id)
     if not item:
         print("Incident not found.")
         return
+
     print(f"\nINCIDENT: {item['incident_id']}")
+
     for key in ("timestamp_utc", "title", "severity", "status", "rule_reason"):
         print(f"{key}: {item[key]}")
+
     print("Affected training files: " + ", ".join(item["affected_files"]))
     print("Supporting event IDs: " + ", ".join(item["supporting_event_ids"]))
-    print("Actions:")
+
+    print("\nSUPPORTING EVIDENCE:")
+
+    try:
+        evidence = edr.get_incident_evidence(incident_id)
+
+        if not evidence:
+            print("No supporting evidence found.")
+
+        for event in evidence:
+            print(f"\nEvent ID: {event['event_id']}")
+            print(f"Timestamp: {event['timestamp_utc']}")
+            print(f"Event type: {event['event_type']}")
+            print(f"Affected file: {event['file']}")
+            print(f"File size: {event['size_bytes']} bytes")
+            print(f"SHA-256: {event['sha256']}")
+
+    except (KeyError, ValueError) as exc:
+        print("Unable to retrieve supporting evidence:", exc)
+
+    print("\nActions:")
+
     if not item["actions"]:
         print("  None yet")
+
     for action in item["actions"]:
         print(f"  {action['timestamp_utc']} | {action['action']} | {action['analyst']}")
-
 
 def interactive(edr: MiniEDR) -> None:
     edr.start()

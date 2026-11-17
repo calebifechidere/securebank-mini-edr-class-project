@@ -114,5 +114,44 @@ class MiniEDRTests(unittest.TestCase):
         self.assertEqual(self.edr.summary()["alerts_total"], 0)
 
 
+    def test_incident_evidence_returns_supporting_events(self):
+        self.edr.simulate_suspicious()
+        incident = self.edr.alerts[-1]
+
+        evidence = self.edr.get_incident_evidence(
+            incident["incident_id"]
+        )
+
+        self.assertEqual(
+            len(evidence),
+            len(incident["supporting_event_ids"])
+        )
+
+        evidence_ids = {event["event_id"] for event in evidence}
+
+        self.assertEqual(
+            evidence_ids,
+            set(incident["supporting_event_ids"])
+        )
+
+    def test_incident_evidence_is_chronological(self):
+        self.edr.simulate_suspicious()
+        incident = self.edr.alerts[-1]
+
+        evidence = self.edr.get_incident_evidence(
+            incident["incident_id"]
+        )
+
+        timestamps = [
+            event["timestamp_utc"] for event in evidence
+        ]
+
+        self.assertEqual(timestamps, sorted(timestamps))
+
+    def test_incident_evidence_rejects_unknown_incident(self):
+        with self.assertRaises(KeyError):
+            self.edr.get_incident_evidence("INVALID-ID")
+
+
 if __name__ == "__main__":
     unittest.main()
