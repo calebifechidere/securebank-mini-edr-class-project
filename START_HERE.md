@@ -1,10 +1,13 @@
-# Start here — SecureBank Mini EDR
+# Start here - SecureBank Mini EDR
 
-You can deploy this project later on Kali Linux, Parrot OS, Ubuntu, or another machine with Python 3.9+.
+## Project details
+- Programme: Tech4Youth Advanced ICT Skills Training Programme - Cybersecurity Operations (Week 6)
+- Learning centre: ESUT ICT and Innovation Hub
+- Tutor: Mr. Noso
+- Lead student: Godwin Caleb Ifechidere
 
-## Quick launch (Kali Linux)
-
-Extract the ZIP, then open a terminal **inside** `SecureBank-Mini-EDR` and run:
+## Run and verify
+From the project root:
 
 ```bash
 python3 --version
@@ -12,23 +15,31 @@ python3 -m unittest discover -s tests -v
 python3 main.py
 ```
 
-Choose **1** for one normal change, **2** for five rapid changes, **4** for alerts, **5** to investigate, **6** to acknowledge, **7** to simulate containment, and **8** to export a report.
+## Live demonstration sequence
+1. Choose `1` to simulate one normal file modification.
+2. Choose `3` to view the event timeline and `4` to confirm no alert from the one-file change.
+3. Choose `2` to simulate five rapid changes across distinct sample files.
+4. Choose `4` to view the alert, then `5` to investigate using the incident ID.
+5. Choose `6` to acknowledge the incident.
+6. Choose `7` to record simulated containment.
+7. Choose `8` to export the incident report.
+8. Choose `9` to exit.
 
 ## Detection levels
-
-- 1–2 distinct files within 10 seconds: no alert.
-- 3–4 distinct files: MEDIUM alert.
-- 5 or more distinct files: HIGH alert.
-- Detection window: 10 seconds.
+- 1-2 distinct files in 10 seconds: no alert.
+- 3-4 distinct files: MEDIUM.
+- 5 or more distinct files: HIGH.
+- A MEDIUM incident may escalate to HIGH as the same incident.
 - Cooldown: 12 seconds.
-- A MEDIUM incident can escalate to HIGH as the same incident.
 
-## What is safe to demonstrate?
+## Important safety boundary
+The project monitors only fictional `.txt` files in `training_files/`. The containment function changes the incident status only. It does not isolate a real device or change operating-system settings.
 
-All file activity is confined to `training_files/`, which contains fictional SecureBank examples. Never copy real customer records, passwords or private files into the lab. The program logs filenames and hashes, not file content. Containment is a status-only simulation.
-
-## What still needs group work?
-
-The PDF is a **draft** until you add the tutor, learning centre, names and verified contributions of all classmates, and screenshots/results from the actual class machine.
-
-Full details: `README.md` and `docs/PRESENTATION_GUIDE.md`.
+## Documentation
+- `docs/REPORT_DRAFT.md` - written class report.
+- `docs/PRESENTATION_GUIDE.md` - step-by-step demonstration and tutor questions.
+- `docs/PRESENTATION_QUICK_CHEATSHEET.md` - short presenter reference.
+- `docs/TEAM_CONTRIBUTIONS_TEMPLATE.md` - participant and contribution record.
+- `docs/SCREENSHOT_CHECKLIST.md` - evidence checklist.
+- `docs/EVIDENCE_INDEX.md` - captions and notes for the supplied screenshots.
+- `reports/SecureBank-Mini-EDR-Class-Report.pdf` - formatted report with screenshot appendix.

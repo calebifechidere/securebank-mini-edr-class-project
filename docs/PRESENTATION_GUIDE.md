@@ -1,261 +1,201 @@
-# SecureBank Mini EDR — Step-by-Step Presentation Guide
+# SecureBank Mini EDR - Step-by-Step Presentation Guide
 
-This guide explains the application in beginner-friendly language and gives a repeatable live demonstration sequence. The class must use one shared application and each learner must be ready to explain their genuine contribution.
+## Project details
+- Programme: Tech4Youth Advanced ICT Skills Training Programme - Cybersecurity Operations (Week 6)
+- Learning centre: ESUT ICT and Innovation Hub
+- Tutor: Mr. Noso
+- Lead student: Godwin Caleb Ifechidere
+- Evidence capture date: 17 November 2026
 
-## A. Understand the project in one minute
+## A. Explain the project simply
 
-SecureBank is a fictional bank. The class is building a small Python program that watches one dedicated folder containing fictional `.txt` training files. It records file changes, checks whether several different files change within a short period, raises an alert when the rule is met, and lets an analyst record a safe simulated response.
+SecureBank is a fictional bank. This Python program watches one dedicated folder containing fictional `.txt` training files. It records file changes, checks whether several different files change within a short period, raises an alert when the rule is met, and lets an analyst record a safe simulated response.
 
-The prototype demonstrates five stages:
+The five stages are:
+1. Visibility - observe activity in the training folder.
+2. Detection - apply a clear rule to recorded activity.
+3. Alerting - create an alert when the rule is met.
+4. Investigation and response - review evidence, acknowledge the incident, and simulate containment.
+5. Reporting - save the event timeline, audit history, and incident summary.
 
-1. **Visibility:** observe activity in the training folder.
-2. **Detection:** apply a clear rule to the recorded activity.
-3. **Alerting:** show an alert when the rule is met.
-4. **Investigation and response:** review the evidence, acknowledge the incident and simulate containment.
-5. **Reporting:** save an event timeline and incident summary.
+This is a classroom prototype, not a complete endpoint protection product.
 
-It is a classroom prototype, not a complete endpoint protection product.
+## B. Detection rule
 
-## B. Important terms to understand
-
-| Term | Simple meaning in this project |
-|---|---|
-| Endpoint | A computer or laptop that needs protection. |
-| EDR | Endpoint Detection and Response: monitoring activity, identifying suspicious patterns and supporting a response. |
-| Monitoring | Checking the training folder repeatedly for changes. |
-| Baseline | The first snapshot of the sample files when the application starts. It gives the program a starting point for comparison. |
-| Telemetry | Recorded details about activity, such as time, filename, file size and file hash. |
-| Event | One observed action, such as a file being created, modified or deleted. |
-| Detection rule | The condition used to decide whether recorded events are unusual. |
-| Alert | A warning created when the rule is met. An alert is a reason to investigate, not proof of an attack. |
-| Investigation | Reviewing the alert, timestamps, affected files and supporting event IDs. |
-| Response | The action an analyst records after reviewing an alert. In this prototype, containment is simulated only. |
-| Audit record | A record of the analyst action and when it was taken. |
-| False positive | Normal activity incorrectly triggers an alert. |
-| False negative | Suspicious activity happens but the rule does not detect it. |
-
-## C. Know exactly what the program monitors
-
-- It watches only `.txt` files inside `training_files/` in the project directory.
-- It checks the folder about every 0.5 seconds while running.
-- It compares each file's modification time, size and SHA-256 fingerprint with the previous snapshot.
-- It records file creation, modification and deletion events.
-- Created and modified files are counted by the detection rule. Deletions are logged but do not count toward the burst rule.
-- It does not save the contents of the files in the event log.
-- It does not monitor the whole computer, processes, network traffic or other folders.
-
-## D. Understand the detection rule
-
-The detector uses a rolling 10-second window.
+The detector uses a rolling 10-second window:
 
 | Different files changed | Result |
 |---|---|
-| 1–2 files | No alert |
-| 3–4 files | MEDIUM alert |
+| 1-2 files | No alert |
+| 3-4 files | MEDIUM alert |
 | 5 or more files | HIGH alert |
 
-The word **different** matters. Changing the same file repeatedly does not count as multiple distinct files.
+The files must be different. Repeatedly changing one file does not count as multiple distinct files. A MEDIUM incident can escalate to HIGH as the same incident. A 12-second cooldown suppresses duplicate alerts from rapid consecutive bursts.
 
-A MEDIUM incident can escalate to HIGH as the same incident when additional file changes reach the HIGH threshold within the detection window.
+## C. What the system monitors
 
-A 12-second cooldown prevents duplicate alerts from rapid consecutive bursts.
+- Only `.txt` files inside `training_files/`.
+- It compares file modification time, size, and SHA-256 fingerprint.
+- It records created, modified, and deleted file events.
+- Created and modified files count toward the burst rule; deletions are logged but do not count.
+- File contents are not stored in the event log.
+- It does not monitor processes, network traffic, or other folders.
 
-## E. Prepare the computer before the presentation
+## D. Prepare and run
 
-1. Extract the ZIP file.
-2. Open a terminal inside the `SecureBank-Mini-EDR` folder.
-3. Check Python:
+From the project root:
 
-   ```bash
-   python3 --version
-   ```
+```bash
+python3 --version
+python3 -m unittest discover -s tests -v
+python3 main.py
+```
 
-4. For a clean first demonstration only, clear previously generated runtime records:
+No administrator privileges, third-party packages, or internet connection are required.
 
-   ```bash
-   rm -rf runtime
-   ```
+## E. Live demonstration script
 
-   This removes only the application's generated logs and reports. It does not remove the training files or source code.
+### 1. Introduce the application
 
-5. Run the automated tests:
+Say: "This is SecureBank Mini EDR. It monitors only fictional text files in a dedicated training folder. It records file activity, applies a detection rule, raises alerts when the rule is met, and allows an analyst to investigate and record a safe response."
 
-   ```bash
-   python3 -m unittest discover -s tests -v
-   ```
+Point to the monitoring path printed at startup.
 
-6. Start the application:
+### 2. Demonstrate normal activity
 
-   ```bash
-   python3 main.py
-   ```
+- Enter `1` to update one fictional sample file.
+- Enter `3` to view the event timeline.
+- Enter `4` to view alerts.
 
-No administrator privileges, external packages or internet connection are required.
+Say: "The system recorded the file modification, but one changed file is below the alert threshold. This demonstrates that not every event is suspicious."
 
-## F. Live demonstration — follow these exact steps
+Expected observation: one MODIFIED event and no new alert.
 
-### Step 1: Introduce the system
+### 3. Demonstrate suspicious activity
 
-Say: “This is SecureBank Mini EDR. SecureBank is a fictional organisation. Our prototype monitors only the sample text files in the `training_files` folder. It demonstrates how file activity becomes events, how a detection rule creates an alert, and how an analyst records a response.”
+- Enter `2` to update five different fictional files quickly.
+- Enter `3` to view the event timeline.
+- Enter `4` to view the HIGH alert.
 
-Show the printed monitoring path and explain that the original sample files form the baseline.
+Say: "Five different files changed within ten seconds. The rule classified this burst as HIGH and attached supporting event IDs for investigation."
 
-### Step 2: Demonstrate normal activity
+### 4. Investigate the incident
 
-1. At the menu, enter `1` and press Enter.
-2. The program updates one fictional sample file.
-3. Enter `3` to view the event timeline.
-4. Point out the `MODIFIED` event, timestamp, filename and event ID.
-5. Enter `4` to view alerts. There should be no new HIGH alert from this one-file change.
+- Copy the incident ID shown in the alert.
+- Enter `5` and paste the incident ID.
+- Point out severity, status, rule reason, affected filenames, supporting event IDs, timestamps, file sizes, and SHA-256 hashes.
 
-Say: “The system has visibility because it recorded the change. It did not raise a HIGH alert because one changed file is below the threshold of five different files.”
+Say: "An alert is not proof of an attack. The analyst checks the supporting evidence and decides whether the activity is expected or requires escalation."
 
-### Step 3: Demonstrate suspicious activity
+### 5. Acknowledge the incident
 
-1. Enter `2` and press Enter.
-2. The program rapidly updates five different fictional sample files.
-3. Enter `3` to show the events.
-4. Enter `4` to show the HIGH alert.
-5. Read the rule reason and point out the five affected filenames.
+- Enter `6` and provide the same incident ID.
 
-Say: “The detection rule found five different files changed within ten seconds. It generated a HIGH alert and attached supporting event IDs so the analyst can trace the evidence.”
+Say: "Acknowledgement records that an analyst has taken responsibility for reviewing the incident. The action is retained in the audit log."
 
-### Step 4: Investigate the alert
+### 6. Simulate containment
 
-1. From option `4`, copy the incident ID shown on the alert line.
-2. Enter `5`.
-3. Paste the incident ID and press Enter.
-4. Point out the severity, status, reason, affected files and supporting event IDs.
-5. Explain that the application retrieves the original supporting records in chronological order, showing timestamps, event types, file sizes and SHA-256 hashes.
+- Enter `7` and provide the same incident ID.
 
-Say: “An alert is not proof that an attack happened. The analyst reviews the timestamps and affected files to decide whether the activity is expected or needs further investigation.”
+Say: "This is a simulation only. The application changes the incident status and records the action. It does not isolate a real computer, stop processes, disable network access, or quarantine files."
 
-### Step 5: Acknowledge the alert
+### 7. Export the report
 
-1. Enter `6`.
-2. Paste the same incident ID.
-3. The status should change to `ACKNOWLEDGED`.
+- Enter `8`.
+- Point out the event counts, alert status, report path, and response history.
+- Open the generated text report.
+- Enter `9` to exit.
 
-Say: “Acknowledgement records that an analyst has taken responsibility for reviewing the incident. The action is also written to the audit log.”
+Say: "The report preserves the event sequence, alert reason, affected files, and response actions for later review."
 
-### Step 6: Simulate containment
+## F. Explain the architecture
 
-1. Enter `7`.
-2. Paste the same incident ID.
-3. The status should change to `CONTAINMENT_SIMULATED`.
+```text
+training_files/
+      |
+      v
+Polling collector and baseline
+      |
+      v
+runtime/events.jsonl
+      |
+      v
+Rolling 10-second detection rule
+      |
+      +--> 1-2 files: no alert
+      +--> 3-4 files: MEDIUM
+      +--> 5+ files: HIGH
+      |
+      v
+runtime/alerts.json
+      |
+      v
+Chronological evidence retrieval
+      |
+      v
+Analyst investigation
+      |
+      v
+Acknowledgement / simulated containment
+      |
+      v
+Audit log and incident report
+```
 
-Say: “This is only a simulation. The program changes the incident status and records the analyst action. It does not isolate a real computer, stop processes, disable network access or quarantine files.”
+## G. Important questions the tutor may ask
 
-### Step 7: Generate the report
+**What does EDR mean?**  
+Endpoint Detection and Response. It is a security approach for monitoring endpoint activity, detecting suspicious patterns, investigating alerts, and supporting response.
 
-1. Enter `8`.
-2. Show the summary counts.
-3. Point out the path to the generated report under `runtime/reports/`.
-4. Open the report in a text editor and show the event timeline and incident response history.
-5. Enter `9` to exit when finished.
+**What is an endpoint?**  
+A computer or device connected to an organisation's systems or network.
 
-Say: “The report preserves the event sequence, alert reason, affected files and response actions for later review.”
+**What is a baseline?**  
+The initial snapshot of the sample files. It gives the application a starting point for detecting later changes.
 
-## G. Understand the files created by the application
+**What is telemetry?**  
+Recorded metadata about activity, such as timestamp, event type, filename, file size, and SHA-256 fingerprint.
 
-| Path | What it contains |
-|---|---|
-| `training_files/` | Fictional sample text files watched by the program. |
-| `runtime/events.jsonl` | One JSON record per observed file event. |
-| `runtime/alerts.json` | Alert and incident details, including status. |
-| `runtime/audit.jsonl` | Analyst acknowledgement and simulated-response actions. |
-| `runtime/reports/` | Human-readable incident summary reports. |
+**Why does one file change not trigger an alert?**  
+One or two distinct files are below the threshold. Three or four trigger MEDIUM; five or more trigger HIGH.
 
-## H. Explain the architecture
+**What is a false positive?**  
+Legitimate bulk activity that changes three or more files within ten seconds may trigger an alert.
 
-Use this sequence when pointing at the architecture diagram:
+**What is a false negative?**  
+Suspicious activity affecting fewer than three files or occurring slowly may not trigger this rule.
 
-`training_files/` → **collector** → **event log** → **detection rule** → **alert** → **analyst investigation** → **response record** → **report**.
+**What is SHA-256 used for?**  
+It creates a digital fingerprint used to help identify content changes. It does not reveal or decrypt the file contents.
 
-- The **collector** checks the files and identifies differences from the last snapshot.
-- The **event log** stores the observation and supporting metadata.
-- The **detection rule** counts distinct created or modified files in the ten-second window.
-- The **alert** stores the reason and event references.
-- The **analyst** reviews the evidence and records an action.
-- The **report** presents the event and incident history.
+**Does the application provide real containment?**  
+No. It records `CONTAINMENT_SIMULATED` and adds an audit entry. It does not isolate a real endpoint.
 
-## I. Questions the tutor may ask
+**What does cooldown do?**  
+It suppresses duplicate alerts from rapid consecutive bursts. It also supports a MEDIUM-to-HIGH escalation workflow without creating a second incident.
 
-**1. What does EDR mean?**
+## H. Limitations to state clearly
 
-Endpoint Detection and Response. It is a security approach used to monitor endpoint activity, detect suspicious behaviour and support investigation and response.
+- It monitors only `.txt` files in one dedicated folder.
+- It uses polling and may miss very short-lived changes.
+- A legitimate bulk update may create a false positive.
+- Smaller or slower suspicious activity may be missed.
+- It does not inspect processes, network traffic, or operating-system telemetry.
+- Containment is simulated only.
+- It is a teaching prototype, not production EDR software.
 
-**2. What is an endpoint?**
+## I. Evidence captured for this report
 
-A device such as a workstation, desktop or laptop that connects to an organisation's systems or network.
+Eleven screenshots are included in `evidence/` and discussed in `docs/EVIDENCE_INDEX.md`. The main incident investigation sequence uses incident `INC-20261117061448-6CB317`. A separate audit/export run uses `INC-20261117065154-405D15`, and a separate threshold demonstration uses `INC-20261117070153-960CB9`. Keep these runs distinct when explaining the evidence.
 
-**3. What is telemetry in this project?**
+## J. Presentation timing from the assignment brief
 
-The metadata collected about file activity: timestamp, event type, relative filename, file size and SHA-256 fingerprint.
+| Segment | Suggested time |
+|---|---:|
+| Introduction | 3 minutes |
+| Architecture | 4 minutes |
+| Live demonstration | 8 minutes |
+| Class contributions | 10-15 minutes |
+| Questions | 5 minutes |
 
-**4. Why do you need a baseline?**
-
-The baseline records the starting state of the sample files. Without it, the program would not know which files were already present before monitoring began.
-
-**5. Why does one changed file not trigger an alert?**
-
-One or two files produce no alert. Three or four distinct files produce MEDIUM severity, while five or more produce HIGH severity.
-
-**6. Why did you choose five files in ten seconds?**
-
-The project uses three different files for MEDIUM severity and five for HIGH severity within ten seconds. These are educational demonstration thresholds, not universal security rules.
-
-**7. What is a false positive?**
-
-A legitimate bulk update that changes three or more files within ten seconds could trigger an alert even though no attack occurred.
-
-**8. What is a false negative?**
-
-An unusual action that changes fewer than three files, or changes them slowly, may not trigger this rule.
-
-**9. What is SHA-256 used for?**
-
-It creates a digital fingerprint of a file's contents. The program compares the fingerprint between scans to help identify content changes. It does not decrypt or reveal the file contents.
-
-**10. Does this application provide real containment?**
-
-No. It only changes the incident status to `CONTAINMENT_SIMULATED` and records the action. It does not alter the operating system or isolate the device.
-
-**11. What are the limitations?**
-
-It monitors only text files in one folder, uses periodic polling, applies one threshold rule, may produce false positives or miss activity, and does not inspect processes or network traffic.
-
-**12. How did you test it?**
-
-After integrating PR #4 and PR #5, the combined project passed 24 automated unit tests. These cover normal activity, severity thresholds, incident escalation, cooldown, evidence retrieval, response workflow and monitoring boundaries. The group should also run the tests on its actual presentation computer.
-
-**13. How does evidence retrieval work?**
-
-The program uses the supporting event IDs attached to an incident to find the original records and display them chronologically.
-
-**14. What is the purpose of the cooldown?**
-
-It prevents repeated alerts from rapid consecutive bursts and helps avoid duplicate incident records.
-
-## J. Suggested presentation timing from the tutor's brief
-
-| Segment | Suggested time | What to cover |
-|---|---:|---|
-| Introduction | 3 minutes | EDR and the fictional SecureBank problem. |
-| Architecture | 4 minutes | Monitoring, collection, detection, alert and response. |
-| Live demonstration | 8 minutes | Baseline, normal activity, suspicious activity, alert and response. |
-| Class contributions | 10–15 minutes | Each learner explains their actual contribution. |
-| Questions | 5 minutes | Rules, evidence, false positives and limitations. |
-
-## K. Final checklist before submission
-
-- [ ] Run the program on the actual class presentation computer.
-- [ ] Run the automated tests and capture the real terminal output.
-- [ ] Capture the baseline and normal-activity scenario.
-- [ ] Capture the suspicious five-file scenario and HIGH alert.
-- [ ] Capture investigation, acknowledgement and simulated containment.
-- [ ] Capture the generated report.
-- [ ] Add a caption and explanation for every screenshot in the PDF.
-- [ ] Add the tutor, learning centre, presentation date and all actual student names.
-- [ ] Complete the contribution record truthfully.
-- [ ] Ensure every learner can explain at least one part of the system.
+Every learner should be able to explain their actual contribution. Complete the contribution record in `docs/TEAM_CONTRIBUTIONS_TEMPLATE.md`.

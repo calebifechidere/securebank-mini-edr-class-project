@@ -2,181 +2,105 @@
 
 **A safe, offline Endpoint Detection and Response (EDR) teaching prototype built in Python 3.**
 
-> **Educational scope:** This is not commercial antivirus/EDR software. It monitors **only fictional `.txt` files** in its own `training_files/` directory. It never intentionally collects credentials, monitors unrelated folders, stores file contents in logs, kills processes, disables networking, or performs real containment.
+> **Educational scope:** This is not commercial antivirus/EDR software. It monitors only fictional `.txt` files in its own `training_files/` directory. It does not monitor unrelated folders, collect credentials, store file contents in logs, kill processes, disable networking, or perform real containment.
 
-## 1. What it does
+## 1. What it demonstrates
 
 | EDR principle | Prototype feature |
 |---|---|
-| **Visibility** | Polls a dedicated fictional training folder for created, modified, and deleted `.txt` files. |
-| **Detection** | Raises MEDIUM alerts for 3–4 different files and HIGH alerts for 5 or more within 10 seconds. |
-| **Investigation** | Retrieves supporting event records chronologically, showing event IDs, timestamps, filenames, sizes and SHA-256 hashes. |
-| **Response** | Analyst can acknowledge an incident and mark containment as **simulated**. |
-| **Reporting** | Saves structured JSON events/alerts and an incident-summary text report. |
+| Visibility | Polls a dedicated fictional training folder for created, modified, and deleted `.txt` files. |
+| Detection | 1-2 distinct files: no alert; 3-4: MEDIUM; 5 or more: HIGH within a rolling 10-second window. |
+| Investigation | Retrieves supporting event records chronologically, including event IDs, timestamps, filenames, sizes, and SHA-256 hashes. |
+| Response | Allows an analyst to acknowledge an incident and record containment as simulated. |
+| Reporting | Saves structured JSON events/alerts, an audit trail, and a human-readable incident summary. |
 
-Uses **only Python's standard library**. No package installation or internet connection is needed.
+The project uses Python's standard library. No package installation or internet connection is required.
 
-## 2. Install and run on Kali Linux / Parrot OS / Ubuntu
+## 2. Run the project
 
-1. Download and extract the project ZIP.
-2. Open a terminal in the extracted `SecureBank-Mini-EDR` folder.
-3. Check Python (recommended Python 3.9+):
+From the project root:
 
 ```bash
 python3 --version
-```
-
-4. Start the interactive application:
-
-```bash
+python3 -m unittest discover -s tests -v
 python3 main.py
 ```
 
-5. The terminal menu lets you generate normal/suspicious sample activity, view events, investigate alerts, acknowledge incidents, simulate containment, and export reports.
+The terminal menu lets the user simulate normal and suspicious file activity, view the event timeline and alerts, investigate incidents, acknowledge an incident, simulate containment, and export a report.
 
-No `pip install`, administrator privileges, or network access is required.
+## 3. Detection logic
 
-### Quick demonstration without menu
+- The initial scan creates a baseline of the fictional training files.
+- The collector compares modification time, file size, and SHA-256 fingerprints.
+- The detector counts distinct created or modified filenames in a rolling 10-second window.
+- 1-2 distinct files: no alert.
+- 3-4 distinct files: MEDIUM incident.
+- 5 or more distinct files: HIGH incident.
+- A MEDIUM incident can escalate to HIGH as the same incident.
+- A 12-second cooldown suppresses duplicate alerts from rapid consecutive bursts.
+- Deletions are logged but do not count toward the burst threshold.
 
-```bash
-python3 main.py --quick-demo
+## 4. Response workflow
+
+```text
+NEW -> ACKNOWLEDGED -> CONTAINMENT_SIMULATED
 ```
 
-This makes one normal file change and then a burst across five fictional files; it prints events and alerts, and writes a report. To use a fresh isolated workspace for an independent demo:
+Containment changes the recorded incident status and writes an audit entry. It does not isolate a device, stop processes, disable network access, or quarantine files.
 
-```bash
-python3 main.py --workspace ~/SecureBank-Demo-Run --quick-demo
-```
-
-### Windows PowerShell (optional)
-
-```powershell
-py -3 main.py
-```
-
-## 3. Live demonstration sequence (for class)
-
-1. Start the app with `python3 main.py` (the original sample files become the baseline; no alert is raised).
-2. Choose **1** for one normal file update; choose **3** to show the recorded event, then **4** to confirm no new alert.
-3. Choose **2** to make five rapid changes; choose **4** to show the HIGH-severity incident. The detector also supports MEDIUM severity for three or four distinct changed files.
-4. Choose **5** and paste the incident ID to investigate supporting event records, timestamps, affected files and hashes.
-5. Choose **6** to acknowledge the incident; choose **7** to simulate containment. The app changes only the recorded incident status.
-6. Choose **8** to export the event timeline and final incident summary. Find the report under `runtime/reports/`.
-7. Capture screenshots of the actual demo on your group's computer for the final PDF report.
-
-> If an earlier burst occurred less than 12 seconds ago, the detector's cooldown suppresses a duplicate alert. This is intentional. Wait before demonstrating a second burst.
-
-## 4. Project structure
+## 5. Project structure
 
 ```text
 SecureBank-Mini-EDR/
-├── main.py                     # Entry point
+├── main.py
 ├── securebank_edr/
-│   ├── __init__.py
-│   ├── __main__.py
-│   ├── core.py                 # Polling, telemetry, detection, response, storage
-│   └── cli.py                  # CLI menu and demo generator
-├── training_files/            # Fictional .txt samples ONLY
+├── training_files/
 ├── tests/
-│   ├── test_edr.py             # Core EDR regression tests
-│   └── test_severity.py        # Severity, escalation and cooldown tests
 ├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── REPORT_DRAFT.md
-│   ├── PRESENTATION_GUIDE.md
-│   ├── PRESENTATION_QUICK_CHEATSHEET.md
-│   ├── TEAM_CONTRIBUTIONS_TEMPLATE.md
-│   └── SCREENSHOT_CHECKLIST.md
 ├── reports/
-│   └── SecureBank-Mini-EDR-Class-Report.pdf  # Editable draft content in docs/REPORT_DRAFT.md
-├── runtime/                   # Created on first run (not tracked by Git)
-│   ├── events.jsonl
-│   ├── alerts.json
-│   ├── audit.jsonl
-│   └── reports/
-├── .gitignore
+├── evidence/
+├── runtime/                 # generated locally; not committed
 └── README.md
 ```
 
-## 5. Detection logic
+## 6. Validation
 
-- A file's **mtime, size and SHA-256** fingerprint are compared with the previous polling snapshot.
-- Each new or modified `.txt` file generates an event.
-- The detector checks distinct filenames within a rolling **10-second window**.
-- **1–2 distinct files:** no alert.
-- **3–4 distinct files:** MEDIUM incident.
-- **5 or more distinct files:** HIGH incident.
-- An existing MEDIUM incident can escalate to HIGH without creating a separate incident.
-- A **12-second cooldown** suppresses duplicate alerts from rapid consecutive bursts.
-- Supporting event IDs are used to retrieve the original records chronologically.
-- Deletions are recorded but do not trigger this burst rule.
-- Initial sample files form the startup baseline.
+The integrated project test output supplied for this report shows **24 automated tests passed**. The tests cover normal activity, suspicious bursts, MEDIUM/HIGH thresholds, escalation, cooldown, supporting evidence retrieval, response workflow, persistence, monitoring boundaries, and report generation.
 
-**Detection-rule pseudocode:**
+The captured live demonstration includes:
+- Application startup and monitoring scope.
+- A normal one-file modification recorded without a new alert.
+- A five-file burst that generated an alert and supporting evidence.
+- Incident investigation, acknowledgement, and simulated containment.
+- Incident report export and analyst audit records.
+- A separate severity demonstration showing MEDIUM-to-HIGH escalation under the same incident ID and duplicate suppression during cooldown.
 
-```text
-for each observed file event:
-    log event
-    if event is CREATED or MODIFIED:
-        add event to rolling 10-second window
-        remove expired events
-        count distinct changed filenames
-        if count >= 3:
-            severity = MEDIUM if count < 5 else HIGH
-            if cooldown is active:
-                upgrade existing MEDIUM incident if severity is HIGH
-                otherwise suppress duplicate alert
-            else:
-                create incident with supporting event IDs
-```
+See `docs/REPORT_DRAFT.md` for the written report, `docs/PRESENTATION_GUIDE.md` for the demonstration script, and `docs/EVIDENCE_INDEX.md` for screenshot captions and evidence notes.
 
-## 6. Safe response model
+## 7. Class team and submission details
 
-An incident progresses through:
+- **Programme:** Tech4Youth Advanced ICT Skills Training Programme - Cybersecurity Operations (Week 6)
+- **Learning centre:** ESUT ICT and Innovation Hub
+- **Tutor:** Mr. Noso
+- **Lead student / repository owner:** Godwin Caleb Ifechidere
 
-```text
-NEW --> ACKNOWLEDGED --> CONTAINMENT_SIMULATED
-```
+Eleven participant identities were supplied for this update. The assignment brief refers to 20 learners, so the remaining nine names and individual contribution details must be confirmed by the class before final submission. See `docs/TEAM_CONTRIBUTIONS_TEMPLATE.md`.
 
-Simulation changes the incident status and writes an audit record. It **never** quarantines real files, modifies system settings, stops processes, or interferes with an actual endpoint.
+## 8. Limitations
 
-## 7. Test the implementation
-
-From the extracted project root:
-
-```bash
-python3 -m unittest discover -s tests -v
-```
-
-The integrated project currently passes 24 automated unit tests covering baseline behavior, normal activity, severity thresholds, escalation, cooldown, evidence retrieval, response workflow, persistence, monitoring boundaries and reporting.
-
-See `docs/PRESENTATION_GUIDE.md` for a beginner-friendly explanation and step-by-step live demonstration script. Use `docs/PRESENTATION_QUICK_CHEATSHEET.md` during the presentation and `docs/SCREENSHOT_CHECKLIST.md` to capture evidence.
-
-## 8. Limitations and false positives
-
-- **Folder-only:** Does not monitor the whole computer, running processes, network connections or registry.
-- **Polling:** Very fast changes between polls may be missed. It is not an OS audit or kernel telemetry sensor.
-- **Threshold-based:** Legitimate batch edits can trigger a false positive; smaller suspicious changes may be missed.
-- **Not tamper-resistant:** Training files, log files and Python code can be modified by someone with local filesystem access.
-- **No real containment:** Analyst response is simulated by a status update.
-- **No central console or threat intelligence:** This is a classroom proof of concept, not an enterprise endpoint product.
+- Folder-only monitoring: it does not monitor the whole computer, processes, network connections, or operating-system telemetry.
+- Polling-based collection may miss very short-lived changes between scans.
+- Threshold rules can produce false positives during legitimate bulk updates and false negatives for slower or smaller activity.
+- Local logs are not tamper-resistant enterprise logging.
+- Containment is simulated only.
 
 ## 9. Responsible use
 
-Use only fictional training data in this project folder. Don't point the monitor at private files or business systems. Do not claim this project offers complete endpoint security.
-
-## 10. Assignment and group submission
-
-This project package includes a report draft and a contribution template. Before submitting the class report:
-
-- Add the class members, tutor, programme and learning centre.
-- Run the application on your class's machine and capture **real** normal/suspicious scenario screenshots.
-- Record results that you actually observed on the presentation machine.
-- Complete the contribution log and present **one** integrated application as required.
+Use only the fictional sample files supplied in this project. Do not point the monitor at private files or business systems. Do not describe this educational prototype as a production EDR solution.
 
 ## References
 
-- Python standard library: https://docs.python.org/3/library/
-- Python `pathlib`: https://docs.python.org/3/library/pathlib.html
-- Python `hashlib`: https://docs.python.org/3/library/hashlib.html
-- Assignment: Tech4Youth, Cybersecurity Operations, Week 6 practical assignment (supplied by tutor).
+- Tech4Youth. (2026). *Week 6 Practical Assignment: Build a Simple Endpoint Detection and Response System* [Tutor-provided assignment].
+- Python Software Foundation. *Python standard library documentation*. https://docs.python.org/3/library/
+- Python Software Foundation. *pathlib - Object-oriented filesystem paths*. https://docs.python.org/3/library/pathlib.html
+- Python Software Foundation. *hashlib - Secure hashes and message digests*. https://docs.python.org/3/library/hashlib.html
