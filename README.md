@@ -9,8 +9,8 @@
 | EDR principle | Prototype feature |
 |---|---|
 | **Visibility** | Polls a dedicated fictional training folder for created, modified, and deleted `.txt` files. |
-| **Detection** | Raises a HIGH alert when **5 different training files are created/modified within 10 seconds**. |
-| **Investigation** | Shows the affected filenames, event IDs, rule, reason, severity, and an event timeline. |
+| **Detection** | Raises MEDIUM alerts for 3–4 different files and HIGH alerts for 5 or more within 10 seconds. |
+| **Investigation** | Retrieves supporting event records chronologically, showing event IDs, timestamps, filenames, sizes and SHA-256 hashes. |
 | **Response** | Analyst can acknowledge an incident and mark containment as **simulated**. |
 | **Reporting** | Saves structured JSON events/alerts and an incident-summary text report. |
 
@@ -58,8 +58,8 @@ py -3 main.py
 
 1. Start the app with `python3 main.py` (the original sample files become the baseline; no alert is raised).
 2. Choose **1** for one normal file update; choose **3** to show the recorded event, then **4** to confirm no new alert.
-3. Choose **2** to make five rapid changes; choose **4** to show the HIGH-severity incident.
-4. Choose **5** and paste the incident ID to investigate the supporting events and affected files.
+3. Choose **2** to make five rapid changes; choose **4** to show the HIGH-severity incident. The detector also supports MEDIUM severity for three or four distinct changed files.
+4. Choose **5** and paste the incident ID to investigate supporting event records, timestamps, affected files and hashes.
 5. Choose **6** to acknowledge the incident; choose **7** to simulate containment. The app changes only the recorded incident status.
 6. Choose **8** to export the event timeline and final incident summary. Find the report under `runtime/reports/`.
 7. Capture screenshots of the actual demo on your group's computer for the final PDF report.
@@ -78,7 +78,8 @@ SecureBank-Mini-EDR/
 │   └── cli.py                  # CLI menu and demo generator
 ├── training_files/            # Fictional .txt samples ONLY
 ├── tests/
-│   └── test_edr.py             # Automated regression tests
+│   ├── test_edr.py             # Core EDR regression tests
+│   └── test_severity.py        # Severity, escalation and cooldown tests
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── REPORT_DRAFT.md
@@ -99,13 +100,17 @@ SecureBank-Mini-EDR/
 
 ## 5. Detection logic
 
-- A file's **mtime, size, and SHA-256** fingerprint are compared against the previous polling snapshot.
-- Each new or modified `.txt` file generates an event with timestamp, type, relative path, size, and SHA-256. File contents are **never stored in the event log**.
-- The detector keeps changes from the previous **10 seconds**, using a monotonic clock.
-- If **5 distinct filenames** were changed in that window, it creates one HIGH-severity incident with the supporting event IDs.
-- A **12-second cooldown** suppresses immediate duplicate alerts.
-- Deletion is recorded as telemetry but is not an alert trigger in this beginner prototype.
-- Initial sample files are included in the startup baseline, so app launch alone raises no alert.
+- A file's **mtime, size and SHA-256** fingerprint are compared with the previous polling snapshot.
+- Each new or modified `.txt` file generates an event.
+- The detector checks distinct filenames within a rolling **10-second window**.
+- **1–2 distinct files:** no alert.
+- **3–4 distinct files:** MEDIUM incident.
+- **5 or more distinct files:** HIGH incident.
+- An existing MEDIUM incident can escalate to HIGH without creating a separate incident.
+- A **12-second cooldown** suppresses duplicate alerts from rapid consecutive bursts.
+- Supporting event IDs are used to retrieve the original records chronologically.
+- Deletions are recorded but do not trigger this burst rule.
+- Initial sample files form the startup baseline.
 
 **Detection-rule pseudocode:**
 
@@ -115,8 +120,14 @@ for each observed file event:
     if event is CREATED or MODIFIED:
         add event to rolling 10-second window
         remove expired events
-        if changed_distinct_files >= 5 and cooldown_elapsed:
-            generate HIGH alert with evidence
+        count distinct changed filenames
+        if count >= 3:
+            severity = MEDIUM if count < 5 else HIGH
+            if cooldown is active:
+                upgrade existing MEDIUM incident if severity is HIGH
+                otherwise suppress duplicate alert
+            else:
+                create incident with supporting event IDs
 ```
 
 ## 6. Safe response model
@@ -137,7 +148,7 @@ From the extracted project root:
 python3 -m unittest discover -s tests -v
 ```
 
-Automated tests cover baseline behavior, normal changes, burst detection, supporting evidence, response workflow, persistence, out-of-scope folders, symlink exclusion, report export and deletion behavior.
+The integrated project currently passes 24 automated unit tests covering baseline behavior, normal activity, severity thresholds, escalation, cooldown, evidence retrieval, response workflow, persistence, monitoring boundaries and reporting.
 
 See `docs/PRESENTATION_GUIDE.md` for a beginner-friendly explanation and step-by-step live demonstration script. Use `docs/PRESENTATION_QUICK_CHEATSHEET.md` during the presentation and `docs/SCREENSHOT_CHECKLIST.md` to capture evidence.
 

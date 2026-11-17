@@ -1,12 +1,12 @@
 # SecureBank Mini EDR — Presenter Quick Cheat Sheet
 
 ## One-sentence explanation
-A Python program that watches a folder of fictional text files, records changes, alerts when five different files change within ten seconds, and lets an analyst record acknowledgement and simulated containment.
+A Python program that monitors fictional training files, records changes, raises MEDIUM alerts for 3–4 distinct files and HIGH alerts for 5 or more within ten seconds, and supports evidence-based investigation and simulated response.
 
 ## The five stages
 1. Visibility — monitor `training_files/`.
-2. Detection — apply the five-distinct-files-in-ten-seconds rule.
-3. Alert — create a HIGH incident with evidence references.
+2. Detection — count distinct file changes within ten seconds; 3–4 means MEDIUM and 5 or more means HIGH.
+3. Alert — create a MEDIUM or HIGH incident with supporting evidence references.
 4. Investigation and response — review the evidence, acknowledge and simulate containment.
 5. Reporting — export the event timeline and incident summary.
 
@@ -26,8 +26,11 @@ A Python program that watches a folder of fictional text files, records changes,
 ## Remember these numbers
 - Polling interval: 0.5 seconds.
 - Detection window: 10 seconds.
-- Threshold: 5 distinct created or modified `.txt` files.
-- Cooldown: 12 seconds.
+- MEDIUM threshold: 3 distinct files.
+- HIGH threshold: 5 distinct files.
+- Cooldown: 12 seconds; rapid duplicate bursts are suppressed.
+- An existing MEDIUM incident can escalate to HIGH.
+- Integrated automated tests: 24 passed.
 
 ## Where records are saved
 - `runtime/events.jsonl` — observed file events.

@@ -46,13 +46,19 @@ It is a classroom prototype, not a complete endpoint protection product.
 
 ## D. Understand the detection rule
 
-The rule is deliberately simple and explainable:
+The detector uses a rolling 10-second window.
 
-> Raise one HIGH alert when **five or more different `.txt` files** are created or modified within a **rolling 10-second window**.
+| Different files changed | Result |
+|---|---|
+| 1–2 files | No alert |
+| 3–4 files | MEDIUM alert |
+| 5 or more files | HIGH alert |
 
-The word **different** matters. Changing the same file five times does not count as five different files. The detector counts distinct file paths.
+The word **different** matters. Changing the same file repeatedly does not count as multiple distinct files.
 
-A 12-second cooldown prevents repeated alerts from one burst. If a second suspicious simulation does not create a new alert immediately, wait at least 12 seconds and try again.
+A MEDIUM incident can escalate to HIGH as the same incident when additional file changes reach the HIGH threshold within the detection window.
+
+A 12-second cooldown prevents duplicate alerts from rapid consecutive bursts.
 
 ## E. Prepare the computer before the presentation
 
@@ -120,6 +126,7 @@ Say: “The detection rule found five different files changed within ten seconds
 2. Enter `5`.
 3. Paste the incident ID and press Enter.
 4. Point out the severity, status, reason, affected files and supporting event IDs.
+5. Explain that the application retrieves the original supporting records in chronological order, showing timestamps, event types, file sizes and SHA-256 hashes.
 
 Say: “An alert is not proof that an attack happened. The analyst reviews the timestamps and affected files to decide whether the activity is expected or needs further investigation.”
 
@@ -192,19 +199,19 @@ The baseline records the starting state of the sample files. Without it, the pro
 
 **5. Why does one changed file not trigger an alert?**
 
-The rule requires five different files to be created or modified within ten seconds. One file is below that threshold.
+One or two files produce no alert. Three or four distinct files produce MEDIUM severity, while five or more produce HIGH severity.
 
 **6. Why did you choose five files in ten seconds?**
 
-It is a simple demonstration threshold supplied by the project design. It makes the normal and suspicious scenarios easy to reproduce and explain. It is not a universal security rule.
+The project uses three different files for MEDIUM severity and five for HIGH severity within ten seconds. These are educational demonstration thresholds, not universal security rules.
 
 **7. What is a false positive?**
 
-A legitimate bulk update that changes five files within ten seconds could trigger the alert even though no attack occurred.
+A legitimate bulk update that changes three or more files within ten seconds could trigger an alert even though no attack occurred.
 
 **8. What is a false negative?**
 
-An unusual action that changes fewer than five files, or changes them slowly, may not trigger this rule.
+An unusual action that changes fewer than three files, or changes them slowly, may not trigger this rule.
 
 **9. What is SHA-256 used for?**
 
@@ -220,7 +227,15 @@ It monitors only text files in one folder, uses periodic polling, applies one th
 
 **12. How did you test it?**
 
-The supplied automated test suite checks baseline behaviour, normal changes, burst detection, evidence references, response order, logging, report generation and monitoring boundaries. The group must also run and capture the demonstration on its own presentation machine.
+After integrating PR #4 and PR #5, the combined project passed 24 automated unit tests. These cover normal activity, severity thresholds, incident escalation, cooldown, evidence retrieval, response workflow and monitoring boundaries. The group should also run the tests on its actual presentation computer.
+
+**13. How does evidence retrieval work?**
+
+The program uses the supporting event IDs attached to an incident to find the original records and display them chronologically.
+
+**14. What is the purpose of the cooldown?**
+
+It prevents repeated alerts from rapid consecutive bursts and helps avoid duplicate incident records.
 
 ## J. Suggested presentation timing from the tutor's brief
 

@@ -13,7 +13,11 @@
 
 ## 2. Executive summary
 
-SecureBank Mini EDR is a local, Python-based training prototype that demonstrates endpoint visibility, simple rule-based detection, incident investigation, and safe response recording. It watches only a dedicated folder containing fictional `.txt` files. A user can generate a normal single-file change, followed by a short burst affecting five different files. Each event is logged with its timestamp, action, filename, size, and SHA-256 digest. A threshold rule raises a HIGH alert when five different files change within ten seconds. The analyst can review the evidence, acknowledge the incident and mark containment as simulated. The system creates an event timeline and incident summary. It does not provide full endpoint protection or perform real containment.
+SecureBank Mini EDR is a local Python training prototype demonstrating endpoint visibility, rule-based detection, incident investigation and safe response recording. It monitors a dedicated folder of fictional `.txt` files. Each event records its timestamp, action, filename, file size and SHA-256 digest.
+
+The detector uses a rolling 10-second window. Three or four distinct changed files generate a MEDIUM alert, while five or more generate a HIGH alert. An existing MEDIUM incident can escalate to HIGH as the same incident. Analysts can retrieve supporting event records chronologically, acknowledge an incident and record simulated containment.
+
+The application produces event timelines and incident summaries. It does not provide full endpoint protection or perform real containment.
 
 ## 3. Introduction and problem statement
 
@@ -23,11 +27,11 @@ SecureBank's fictional scenario calls for a way to notice unusual activity on wo
 
 **Aim:** Build one integrated class prototype demonstrating the visibility, detection, investigation and response workflow of EDR.
 
-**Objectives:** (1) Monitor a dedicated fictional training folder. (2) Log newly created, modified or deleted `.txt` files. (3) Detect five distinct file changes in ten seconds. (4) Show incident severity, reason and supporting events. (5) Allow acknowledgement and simulated containment. (6) Export the event timeline and a readable incident summary. (7) Demonstrate both a normal and a suspicious activity scenario.
+**Objectives:** (1) Monitor a dedicated fictional training folder. (2) Log created, modified and deleted `.txt` files. (3) Detect 3–4 distinct file changes as MEDIUM and 5 or more as HIGH within ten seconds. (4) Retrieve chronological supporting event records. (5) Support incident escalation, acknowledgement and simulated containment. (6) Export event timelines and incident summaries. (7) Demonstrate normal and suspicious activity.
 
 ## 5. System architecture
 
-`training_files/` -> polling collector -> `runtime/events.jsonl` -> rolling 10-second detection window -> `runtime/alerts.json` -> analyst investigation -> acknowledgement / simulated containment -> audit history and incident report.
+`training_files/` -> polling collector -> `runtime/events.jsonl` -> rolling 10-second detection window -> MEDIUM/HIGH severity evaluation -> `runtime/alerts.json` -> chronological evidence retrieval -> analyst investigation -> acknowledgement / simulated containment -> audit history and incident report.
 
 The collector uses file modification timestamps, sizes and SHA-256 fingerprints to identify changes. The detector applies an explainable rule to a rolling ten-second window. The CLI menu displays events and incidents, while JSON and text files retain a record for review. The response feature changes only incident status and does not kill processes, quarantine files or disable network access.
 
@@ -43,21 +47,33 @@ The collector uses file modification timestamps, sizes and SHA-256 fingerprints 
 
 ## 7. Development methodology
 
-The application was broken into the file monitor, event store, detector, analyst response, and reporting functions. A narrow training directory was created with six fictional sample files. The initial scan forms the baseline so launching the application does not immediately trigger an alert. Subsequent snapshots are compared to identify changes. The detector evaluates distinct changed filenames in a rolling window and applies a cooldown to avoid duplicate alerts. A state-only response workflow preserves an audit trail. Finally, unit tests exercise expected behavior and boundary conditions.
+The application was divided into monitoring, event storage, detection, evidence retrieval, analyst response and reporting functions. The initial scan establishes a baseline from the fictional training files. Later scans compare file modification time, size and SHA-256 fingerprints to identify changes.
+
+The detector counts distinct changed filenames within a rolling ten-second window. Three or four files generate MEDIUM severity; five or more generate HIGH severity. A cooldown suppresses duplicate alerts, while an existing MEDIUM incident can escalate to HIGH. Supporting event IDs retrieve the original records chronologically. Unit tests validate expected behavior and boundary conditions.
 
 ## 8. Tests and results
 
-**Developer validation (isolated environment, 13 November 2026):** Thirteen unit tests passed. In a separate quick demonstration, a single-file update generated one MODIFIED event and **zero new alerts**. Five rapid distinct-file updates generated **one new HIGH alert**. The incident contained affected filenames and supporting event references. A simulated response changed the alert status without modifying training files.
+**Integrated validation:** After PR #4 (incident evidence retrieval) and PR #5 (cooldown regression testing) were merged into the main branch, the integrated local working copy passed **24 automated unit tests** using:
 
-**Class's own demonstration results:** [Insert the test date, workstation, actual screenshots, generated report path, and observations once the group runs the application. Do not present the isolated developer test as the class's own observation.]
+`python3 -m unittest discover -s tests -v`
+
+The tests cover baseline behavior, normal and suspicious activity, MEDIUM/HIGH thresholds, incident escalation, cooldown, chronological evidence retrieval, invalid incident handling, persistence, monitoring boundaries, simulated response and report generation.
+
+This result was obtained in the integrated local working copy. The group must run the test suite on the actual presentation computer before reporting those results as independently verified there.
+
+**Class's own demonstration results:** [Insert the test date, workstation, actual screenshots, generated report path and observations once the group runs the application.]
 
 ## 9. Alert investigation and response
 
-A HIGH alert identifies the burst rule, its detection window, the number of distinct changed files, affected filenames and supporting event IDs. The analyst first inspects the timeline to confirm that a burst occurred. The analyst can mark the incident ACKNOWLEDGED. A subsequent action sets the state to CONTAINMENT_SIMULATED, with an audit entry recording the analyst and time. This is a workflow demonstration only; the program does not isolate a device or suspend processes.
+A MEDIUM or HIGH alert identifies the detection rule, affected files and supporting event IDs. The analyst can retrieve the original event records in chronological order, including timestamps, event types, filenames, file sizes and SHA-256 hashes.
+
+A MEDIUM incident can escalate to HIGH as the same incident when the HIGH threshold is reached within the detection window. The analyst can acknowledge the incident. A subsequent action records `CONTAINMENT_SIMULATED` and adds an audit entry with the analyst and timestamp.
+
+This is a workflow demonstration only. The application does not isolate a device, stop processes, disable network access or quarantine files.
 
 ## 10. Challenges, false positives, and limitations
 
-- A legitimate bulk edit to five sample files could trigger the same high alert as a suspicious scripted edit (false positive).
+- A legitimate bulk edit to three or more sample files could trigger an alert (false positive).
 - A suspicious action that modifies only one file may be missed (false negative).
 - Polling can miss changes occurring and reverting entirely between scans.
 - The monitor sees only `.txt` files inside the training folder, not processes, network traffic, real devices or operating-system telemetry.
