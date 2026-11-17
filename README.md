@@ -28,6 +28,38 @@ python3 main.py
 
 The terminal menu lets the user simulate normal and suspicious file activity, view the event timeline and alerts, investigate incidents, acknowledge an incident, simulate containment, and export a report.
 
+
+
+## 2.1 Optional Desktop GUI
+
+The project also includes an optional PySide6 desktop graphical interface.
+
+### Install the GUI dependency
+
+On Kali Linux:
+
+```bash
+sudo apt update
+sudo apt install python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets
+```
+
+### Launch the GUI
+
+From the project root:
+
+```bash
+python3 -m securebank_edr.gui.main_window
+```
+
+The GUI provides a desktop dashboard with monitoring controls, event activity, incident overview, and operational metrics.
+
+The original command-line interface remains available:
+
+```bash
+python3 main.py
+```
+
+
 ## 3. Detection logic
 
 - The initial scan creates a baseline of the fictional training files.
