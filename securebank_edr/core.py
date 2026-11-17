@@ -133,7 +133,7 @@ class MiniEDR:
             # Symlinked files and directories are excluded; only training files.
             if file.is_symlink() or any(parent.is_symlink() for parent in file.parents if parent != root):
                 continue
-            try: 
+            try:
                 resolved = file.resolve(strict=True)
                 if os.path.commonpath([str(root), str(resolved)]) != str(root):
                     continue
@@ -315,40 +315,40 @@ class MiniEDR:
 
 
     def get_incident_evidence(self, incident_id: str) -> list[dict]:
-    """Retrieve all supporting events for an incident in chronological order."""
-    with self._lock:
-        incident = self.get_incident(incident_id)
+        """Retrieve all supporting events for an incident in chronological order."""
+        with self._lock:
+            incident = self.get_incident(incident_id)
 
-        if incident is None:
-            raise KeyError("Incident not found")
+            if incident is None:
+                raise KeyError("Incident not found")
 
-        supporting_ids = incident["supporting_event_ids"]
+            supporting_ids = incident["supporting_event_ids"]
 
-        event_lookup = {
-            event["event_id"]: event
-            for event in self.events
-        }
+            event_lookup = {
+                event["event_id"]: event
+                for event in self.events
+            }
 
-        missing_ids = [
-            event_id
-            for event_id in supporting_ids
-            if event_id not in event_lookup
-        ]
+            missing_ids = [
+                event_id
+                for event_id in supporting_ids
+                if event_id not in event_lookup
+            ]
 
-        if missing_ids:
-            raise ValueError(
-                f"Supporting evidence records missing: {missing_ids}"
-            )
+            if missing_ids:
+                raise ValueError(
+                    f"Supporting evidence records missing: {missing_ids}"
+                )
 
-        evidence = [
-            event_lookup[event_id].copy()
-            for event_id in supporting_ids
-        ]
+            evidence = [
+                event_lookup[event_id].copy()
+                for event_id in supporting_ids
+            ]
 
-        evidence.sort(key=lambda event: event["timestamp_utc"])
+            evidence.sort(key=lambda event: event["timestamp_utc"])
 
-        return evidence
-    
+            return evidence
+
 
     def respond(self, incident_id: str, response: str, analyst: str = "training-analyst") -> dict:
         """Change recorded incident state; never perform actual containment."""
